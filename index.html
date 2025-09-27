@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Battle Arena</title>
+
+    <!-- External Dependencies -->
+    <!-- Lucide for crisp SVG icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Tone.js for web audio and sound effects -->
+    <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
+    <!-- Google Font for the retro, pixelated aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS for rapid, utility-first styling, primarily for modals and layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Local Stylesheets with Cache Busting -->
+    <link id="main-stylesheet" rel="stylesheet" href="">
+    <script>
+        // Dynamically set the stylesheet href with a timestamp to prevent the browser from using an old, cached version.
+        // This is a common development technique to ensure style changes are always reflected immediately.
+        document.getElementById('main-stylesheet').href = 'style.css?t=' + new Date().getTime();
+    </script>
+
+    <!-- Tailwind CSS Configuration -->
+    <script>
+        // We extend the default Tailwind theme to include our custom pixel font.
+        // This allows us to use classes like `font-pixel` throughout the HTML.
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'pixel': ['"Press Start 2P"', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-pixel text-white bg-slate-900 min-h-screen overflow-x-hidden">
+
+    <!-- ===== SHARED ELEMENTS ===== -->
+    <!-- These elements are visible across different views of the application. -->
+
+    <!-- Parallax Background: A series of layered divs that scroll at different speeds to create an illusion of depth. -->
+    <div id="parallax-bg">
+        <div class="parallax-layer" data-speed="1" style="animation-duration: 120s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-1.png');"></div>
+        <div class="parallax-layer" data-speed="2" style="animation-duration: 80s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-2.png');"></div>
+        <div class="parallax-layer" data-speed="3" style="animation-duration: 60s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-3.png');"></div>
+        <div class="parallax-layer ground" data-speed="4" style="animation-duration: 40s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/ground.png');"></div>
+    </div>
+
+    <!-- Weather Effects: Overlays that are toggled by JavaScript to show weather conditions like sandstorms or hail. -->
+    <div id="sandstorm-overlay" class="weather-effect hidden"></div>
+    <div id="hail-overlay" class="weather-effect hidden"></div>
+
+    <!-- Announcement Banner: A pop-up banner for displaying game messages (e.g., "It's super effective!"). -->
+    <div id="announcement-banner" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 border-2 px-6 py-3 z-50 hidden">
+        <p id="announcement-text" class="text-sm"></p>
+    </div>
+
+    <!-- Loading Screen: Shown during transitions, for example, when moving from the lobby to the arena. -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center hidden">
+        <div class="text-center">
+            <div class="animate-spin w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <div class="text-xl text-yellow-400 mb-2">Loading Battle Arena...</div>
+            <div class="text-sm text-slate-400">Preparing Pokémon data...</div>
+        </div>
+    </div>
+
+
+    <!-- ===== LOBBY VIEW ===== -->
+    <!-- The initial screen the user sees. It contains the main menu and settings. -->
+    <div id="lobby-view">
+        <div class="flex flex-col items-center justify-center min-h-screen relative z-10 px-4">
+            <!-- Header Logo -->
+            <header class="text-center mb-12 animate-pulse">
+                <h1 class="text-4xl md:text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg">
+                    ⚡ POKÉMON ⚡
+                </h1>
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-2">
+                    BATTLE ARENA
+                </h2>
+                <div class="text-sm text-slate-300">
+                    Competitive Battle Simulator
+                </div>
+            </header>
+
+            <!-- Main Menu Card -->
+            <div class="bg-slate-800/90 border-4 border-slate-600 p-8 max-w-md w-full backdrop-blur-sm">
+                <div class="text-center mb-6">
+                    <h3 class="text-lg text-yellow-400 mb-2">Welcome, Trainer!</h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Prepare for intense Pokémon battles with up to 6 trainers.
+                        Build your team and prove your skills!
+                    </p>
+                </div>
+
+                <!-- Menu Options -->
+                <div class="space-y-4">
+                    <button id="quick-battle-btn" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
+                        <div class="flex items-center justify-center gap-3">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            <span>QUICK BATTLE</span>
+                        </div>
+                        <div class="text-xs text-green-200 mt-1">Start battling immediately</div>
+                    </button>
+                    <button id="create-room-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
+                        <div class="flex items-center justify-center gap-3">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            <span>CREATE ROOM</span>
+                        </div>
+                        <div class="text-xs text-blue-200 mt-1">Host a custom battle</div>
+                    </button>
+                    <button id="join-room-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
+                        <div class="flex items-center justify-center gap-3">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                            <span>JOIN ROOM</span>
+                        </div>
+                        <div class="text-xs text-purple-200 mt-1">Enter with room code</div>
+                    </button>
+                    <button id="settings-btn" class="w-full bg-slate-600 hover:bg-slate-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
+                        <div class="flex items-center justify-center gap-3">
+                            <i data-lucide="settings" class="w-5 h-5"></i>
+                            <span>SETTINGS</span>
+                        </div>
+                        <div class="text-xs text-slate-300 mt-1">Game preferences</div>
+                    </button>
+                </div>
+
+                <!-- Player Name Input -->
+                <div class="mt-6 border-t border-slate-600 pt-4">
+                    <label class="block text-sm text-slate-300 mb-2">Trainer Name:</label>
+                    <input id="trainer-name-input" type="text" placeholder="Enter your name..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm text-white">
+                    <div class="text-xs text-slate-400 mt-1">This will be your display name in battles</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="mt-8 text-center">
+                <div class="text-xs text-slate-500">
+                    <p>Press any button to enable audio</p>
+                    <p class="mt-1">© 2025 Pokémon Battle Arena</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- ===== ARENA VIEW (Initially Hidden) ===== -->
+    <!-- This is the main battle screen, which becomes visible after leaving the lobby. -->
+    <div id="arena-view" class="hidden">
+        <div class="flex flex-col h-screen">
+            <!-- Header: Contains the game title, round counter, and timer controls. -->
+            <header class="bg-slate-800/90 border-b-4 border-slate-600 p-4 relative z-20">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-xl font-bold text-yellow-400">🎮 POKÉMON BATTLE ARENA</h1>
+                        <button id="end-round-btn" class="bg-red-600 hover:bg-red-700 px-4 py-2 border-2 border-black transition-colors">
+                            END ROUND 1
+                        </button>
+                    </div>
+                    <!-- Timer -->
+                    <div class="flex items-center gap-2">
+                        <div id="timer-display" class="text-2xl font-bold bg-slate-700 px-4 py-2 border-2 border-slate-500">
+                            02:00
+                        </div>
+                        <button id="timer-start" class="bg-green-600 hover:bg-green-700 px-3 py-2 border-2 border-black">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                        </button>
+                        <button id="timer-pause" class="bg-yellow-600 hover:bg-yellow-700 px-3 py-2 border-2 border-black">
+                            <i data-lucide="pause" class="w-4 h-4"></i>
+                        </button>
+                        <button id="timer-reset" class="bg-slate-600 hover:bg-slate-700 px-3 py-2 border-2 border-black">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Player Grid: The main area where all the player cards are displayed. -->
+            <main class="flex-1 relative flex">
+                <div id="player-grid">
+                    <!-- Player cards will be dynamically generated and inserted here by script.js -->
+                </div>
+            </main>
+
+            <!-- Control Panel: The footer containing all game master controls for attacks, statuses, etc. -->
+            <footer class="bg-slate-800/95 border-t-4 border-slate-600 p-4 relative z-20">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Attack Command Section -->
+                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
+                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Attack Command</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="text-slate-300">ATTACKER</label>
+                                <label class="text-slate-300">TARGET</label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="attacker-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    <option value="">Select Attacker</option>
+                                </select>
+                                <select id="attack-target-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    <option value="">Select Target</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="text-slate-300">POWER</label>
+                                <label class="text-slate-300">MOVE TYPE</label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input id="move-power-input" type="number" placeholder="Power" class="bg-slate-600 border border-slate-400 p-1 text-xs" min="0" max="999">
+                                <select id="move-type-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    <option value="">Move Type</option>
+                                </select>
+                            </div>
+                            <div id="type-effectiveness-display" class="text-center text-xs bg-slate-600 p-1 border border-slate-400">
+                                EFFECTIVENESS: --
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button id="physical-attack-btn" class="text-xs py-2">DEAL PHYSICAL DMG</button>
+                                <button id="special-attack-btn" class="text-xs py-2">DEAL SPECIAL DMG</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Status & Stats Section -->
+                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
+                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Status & Stats</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="grid grid-cols-3 gap-1">
+                                <button id="curse-btn" data-status="curse" class="status-btn bg-purple-600 hover:bg-purple-700 p-1 border border-black text-xs">Crs</button>
+                                <button id="poison-btn" data-status="poison" class="status-btn bg-purple-800 hover:bg-purple-900 p-1 border border-black text-xs">Psn</button>
+                                <button id="paralyze-btn" data-status="paralyze" class="status-btn bg-yellow-600 hover:bg-yellow-700 p-1 border border-black text-xs">Par</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1">
+                                <button id="weather-btn" class="bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs">Wth</button>
+                                <button id="burn-btn" data-status="burn" class="status-btn bg-red-600 hover:bg-red-700 p-1 border border-black text-xs">Brn</button>
+                                <button id="toxic-btn" data-status="bad_poison" class="status-btn bg-purple-900 hover:bg-purple-950 p-1 border border-black text-xs">Tox</button>
+                            </div>
+                            <div>
+                                <label class="text-slate-300 block mb-1">TARGET</label>
+                                <select id="status-target-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    <option value="">Select Target</option>
+                                </select>
+                            </div>
+                            <!-- Stat Modification -->
+                            <div class="space-y-1">
+                                <div class="grid grid-cols-3 gap-1 mb-1">
+                                    <label class="text-slate-300 text-xs">STAT</label>
+                                    <label class="text-slate-300 text-xs">ACTION</label>
+                                    <label class="text-slate-300 text-xs">VALUE</label>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1">
+                                    <select id="stat-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
+                                        <option value="">Stat</option>
+                                        <option value="hp">HP</option>
+                                        <option value="atk">Attack</option>
+                                        <option value="def">Defense</option>
+                                        <option value="spa">Sp. Atk</option>
+                                        <option value="spd">Sp. Def</option>
+                                        <option value="spe">Speed</option>
+                                    </select>
+                                    <select id="stat-mod-type" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
+                                        <option value="set">Set To</option>
+                                        <option value="+">Add</option>
+                                        <option value="-">Sub</option>
+                                        <option value="+%">Add %</option>
+                                        <option value="-%">Sub %</option>
+                                    </select>
+                                    <input id="stat-value-input" type="number" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs" placeholder="Value">
+                                </div>
+                                <button id="update-stat-btn" class="w-full bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs mt-1">
+                                    UPDATE
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Utility Section -->
+                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
+                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Utility</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="text-center">
+                                <label class="text-slate-300 block mb-1">ACCURACY CHECK (1-100)</label>
+                                <div id="random-number-display" class="bg-slate-600 border border-slate-400 p-2 text-lg font-bold">--</div>
+                                <button id="generate-number-btn" class="w-full bg-green-600 hover:bg-green-700 p-1 border border-black mt-1">GENERATE</button>
+                            </div>
+                            <div class="border-t border-slate-500 pt-2">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-slate-300 block mb-1">NEW PLAYER</label>
+                                        <input id="new-player-name" type="text" placeholder="Player Name" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button id="add-player-btn" class="w-full bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs">ADD</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Management Section -->
+                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
+                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Management</h4>
+                        <div class="space-y-2 text-xs">
+                            <div>
+                                <label class="text-slate-300 block mb-1">SELECT POKÉMON</label>
+                                <select id="management-pokemon-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
+                                    <option value="">Select an Option</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1">
+                                <button id="evolve-btn" class="text-xs py-1" disabled>EVOLVE</button>
+                                <button id="change-form-btn" class="text-xs py-1" disabled>CHANGE FORM</button>
+                                <button id="revive-btn" class="text-xs py-1" disabled>REVIVE</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+
+    <!-- ===== MODALS ===== -->
+    <!-- These are overlay windows that appear for specific actions. They are hidden by default. -->
+
+    <!-- Room Creation Modal -->
+    <div id="room-modal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-yellow-400">Create Battle Room</h2>
+                <button id="close-room-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Room Name:</label>
+                    <input id="room-name-input" type="text" placeholder="Epic Battle Room..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Max Players:</label>
+                    <select id="max-players-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                        <option value="6">6 Players</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Battle Type:</label>
+                    <select id="battle-type-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
+                        <option value="standard">Standard Battle</option>
+                        <option value="tournament">Tournament Style</option>
+                        <option value="elimination">Elimination</option>
+                        <option value="custom">Custom Rules</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Round Timer:</label>
+                    <select id="timer-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
+                        <option value="60">1 Minute</option>
+                        <option value="120" selected>2 Minutes</option>
+                        <option value="180">3 Minutes</option>
+                        <option value="300">5 Minutes</option>
+                        <option value="0">No Timer</option>
+                    </select>
+                </div>
+                <button id="create-room-confirm-btn" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 border-2 border-black">CREATE ROOM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-modal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-yellow-400">Join Battle Room</h2>
+                <button id="close-join-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Room Code:</label>
+                    <input id="room-code-input" type="text" placeholder="Enter 6-digit code..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm uppercase tracking-widest text-center" maxlength="6">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Or select from available rooms:</label>
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                        <!-- Example room list items -->
+                        <button class="room-option w-full bg-slate-700 hover:bg-slate-600 p-3 text-left border border-slate-500">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="text-sm font-bold">Epic Gym Battle</div>
+                                    <div class="text-xs text-slate-400">3/6 players • Standard</div>
+                                </div>
+                                <div class="text-xs text-green-400">ABC123</div>
+                            </div>
+                        </button>
+                        <button class="room-option w-full bg-slate-700 hover:bg-slate-600 p-3 text-left border border-slate-500">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="text-sm font-bold">Elite Four Challenge</div>
+                                    <div class="text-xs text-slate-400">1/4 players • Tournament</div>
+                                </div>
+                                <div class="text-xs text-green-400">DEF456</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                <button id="join-room-confirm-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 border-2 border-black">JOIN ROOM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-yellow-400">Game Settings</h2>
+                <button id="close-settings-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Sound Volume:</label>
+                    <input id="volume-slider" type="range" min="0" max="100" value="70" class="w-full bg-slate-700 border border-slate-500">
+                    <div id="volume-display" class="text-xs text-slate-400 text-center mt-1">70%</div>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-2">Animation Speed:</label>
+                    <select id="animation-speed-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
+                        <option value="slow">Slow</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="fast">Fast</option>
+                        <option value="instant">Instant</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input id="autosave-checkbox" type="checkbox" checked class="w-4 h-4">
+                    <label class="text-sm text-slate-300">Enable Auto-save</label>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input id="damage-numbers-checkbox" type="checkbox" checked class="w-4 h-4">
+                    <label class="text-sm text-slate-300">Show Damage Numbers</label>
+                </div>
+                <button id="save-settings-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 border-2 border-black">SAVE SETTINGS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Management Modal: The most complex modal, for editing a player's team of Pokémon. -->
+    <div id="team-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="team-modal-title" class="text-lg font-bold text-yellow-400">Manage Team</h2>
+                <button id="close-team-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="team-editor-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4"></div>
+            <div id="pokemon-editor-form" class="bg-slate-600 p-4 border-2 border-slate-400 hidden">
+                <!-- This form is dynamically populated by script.js when a user wants to add/edit a Pokémon. -->
+            </div>
+            <div class="flex justify-end mt-4">
+                <button id="confirm-team-btn" class="bg-green-600 hover:bg-green-700 px-6 py-2 border-2 border-black">Confirm Team</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Modal: A generic modal used for presenting choices like evolutions or forms. -->
+    <div id="selection-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="selection-modal-title" class="text-lg font-bold text-yellow-400">Select an Option</h2>
+                <button id="close-selection-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="selection-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <!-- The pokemon_data.js file is expected to contain the database of all Pokémon stats, types, etc. -->
+    <script src="pokemon_data.js" defer></script>
+    <!-- The main battle logic from script.js, which controls the Arena View. -->
+    <script src="script.js" defer></script> 
+    <script>
+        // LOBBY SCRIPT: This inline script handles the logic for the initial Lobby View.
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Shared/Lobby Initializations ---
+            let synth, polySynth;
+
+            // Initialize Tone.js audio on the first user interaction to comply with browser autoplay policies.
+            document.body.addEventListener('click', () => Tone.start(), { once: true });
+            synth = new Tone.Synth().toDestination();
+            polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+
+            // Initialize Lucide icons on the page.
+            lucide.createIcons();
+
+            // Load saved trainer name from browser's local storage.
+            const savedName = localStorage.getItem('trainerName');
+            if (savedName) {
+                document.getElementById('trainer-name-input').value = savedName;
+            }
+
+            // --- Sound Functions ---
+            function playClickSound() {
+                if (synth) synth.triggerAttackRelease("C5", "8n");
+            }
+
+            function playConfirmSound() {
+                if (polySynth) polySynth.triggerAttackRelease(["C4", "G4"], "8n");
+            }
+
+            // --- Modal Functions ---
+            function toggleModal(modal, show) {
+                modal.classList.toggle('visible', show);
+            }
+
+            // --- Lobby Logic Functions ---
+            function generateRoomCode() {
+                return Math.random().toString(36).substr(2, 6).toUpperCase();
+            }
+
+            function saveTrainerName() {
+                const name = document.getElementById('trainer-name-input').value.trim();
+                if (name) {
+                    localStorage.setItem('trainerName', name);
+                }
+            }
+            
+            // --- Core Navigation Logic ---
+            function enterBattleArena(roomCode = null) {
+                saveTrainerName();
+
+                // Show loading screen while simulating preparation.
+                document.getElementById('loading-screen').classList.remove('hidden');
+
+                // Simulate loading time (e.g., fetching data, setting up the arena).
+                setTimeout(() => {
+                    // Hide Lobby and Show Arena View.
+                    document.getElementById('lobby-view').classList.add('hidden');
+                    document.getElementById('arena-view').classList.remove('hidden');
+                    
+                    // Hide loading screen.
+                    document.getElementById('loading-screen').classList.add('hidden');
+
+                    // The main `script.js` file will handle the rest of the application logic from here.
+
+                }, 2000);
+            }
+
+            // --- Lobby Event Listeners ---
+            
+            // Quick Battle button starts the game immediately.
+            document.getElementById('quick-battle-btn').addEventListener('click', () => {
+                playConfirmSound();
+                enterBattleArena();
+            });
+
+            // Event listeners for the "Create Room" modal.
+            const roomModal = document.getElementById('room-modal');
+            document.getElementById('create-room-btn').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(roomModal, true);
+            });
+            document.getElementById('close-room-modal').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(roomModal, false);
+            });
+            document.getElementById('create-room-confirm-btn').addEventListener('click', () => {
+                playConfirmSound();
+                const roomCode = generateRoomCode();
+                // In a real app, this would create a room on a server. Here, we just simulate it.
+                alert(`Room created! Code: ${roomCode}`);
+                toggleModal(roomModal, false);
+                enterBattleArena(roomCode);
+            });
+
+            // Event listeners for the "Join Room" modal.
+            const joinModal = document.getElementById('join-modal');
+            document.getElementById('join-room-btn').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(joinModal, true);
+            });
+            document.getElementById('close-join-modal').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(joinModal, false);
+            });
+            document.getElementById('join-room-confirm-btn').addEventListener('click', () => {
+                const roomCode = document.getElementById('room-code-input').value.trim();
+                if (roomCode.length === 6) {
+                    playConfirmSound();
+                    toggleModal(joinModal, false);
+                    enterBattleArena(roomCode);
+                } else {
+                    alert('Please enter a valid 6-digit room code!');
+                }
+            });
+            
+            // Allow clicking on example rooms to fill the input field.
+            document.querySelectorAll('.room-option').forEach(button => {
+                button.addEventListener('click', () => {
+                    const roomCode = button.querySelector('.text-green-400').textContent;
+                    document.getElementById('room-code-input').value = roomCode;
+                });
+            });
+
+            // Event listeners for the "Settings" modal.
+            const settingsModal = document.getElementById('settings-modal');
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(settingsModal, true);
+            });
+            document.getElementById('close-settings-modal').addEventListener('click', () => {
+                playClickSound();
+                toggleModal(settingsModal, false);
+            });
+            document.getElementById('save-settings-btn').addEventListener('click', () => {
+                playConfirmSound();
+                const settings = {
+                    volume: document.getElementById('volume-slider').value,
+                    animationSpeed: document.getElementById('animation-speed-select').value,
+                    autosave: document.getElementById('autosave-checkbox').checked,
+                    damageNumbers: document.getElementById('damage-numbers-checkbox').checked
+                };
+                localStorage.setItem('gameSettings', JSON.stringify(settings));
+                toggleModal(settingsModal, false);
+            });
+            
+            // Input listeners for real-time feedback and formatting.
+            document.getElementById('volume-slider').addEventListener('input', (e) => {
+                document.getElementById('volume-display').textContent = `${e.target.value}%`;
+            });
+            document.getElementById('room-code-input').addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            });
+            document.getElementById('trainer-name-input').addEventListener('input', saveTrainerName);
+        });
+    </script>
+</body>
+</html>

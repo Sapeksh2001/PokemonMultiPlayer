@@ -1,0 +1,285 @@
+/*
+ * POKÉMON BATTLE ARENA - STYLESHEET
+ * This file defines the entire visual appearance of the application.
+ * It uses a combination of custom CSS for the main battle arena and utility classes (from Tailwind) for modals.
+ * The aesthetic is intentionally retro and pixelated.
+ */
+
+/* --- CSS VARIABLES & GLOBAL STYLES --- */
+:root {
+    /* Color variables for each Pokémon type, used for badges and other UI elements. */
+    --type-normal: #A8A77A; --type-fire: #EE8130; --type-water: #6390F0; --type-electric: #F7D02C;
+    --type-grass: #7AC74C; --type-ice: #96D9D6; --type-fighting: #C22E28; --type-poison: #A33EA1;
+    --type-ground: #E2BF65; --type-flying: #A98FF3; --type-psychic: #F95587; --type-bug: #A6B91A;
+    --type-rock: #B6A136; --type-ghost: #735797; --type-dragon: #6F35FC; --type-dark: #705746;
+    --type-steel: #B7B7CE; --type-fairy: #D685AD;
+
+    /* A gradient of colors used for the segments of the HP meter. */
+    --hp-color-red: #e63946;
+    --hp-color-orange: #f77f00;
+    --hp-color-yellow-orange: #fcbf49;
+    --hp-color-yellow: #ffdd00;
+    --hp-color-yellow-green: #a9dc4c;
+    --hp-color-green: #4caf50;
+
+    /* Colors assigned to different Pokémon tiers for styling card borders. */
+    --tier-color-basic: #a8a77a; /* Normal */
+    --tier-color-mid: #6390F0; /* Water */
+    --tier-color-final: #B7B7CE; /* Steel */
+    --tier-color-mega: #EE8130; /* Fire */
+    --tier-color-gmax: #F7D02C; /* Electric */
+    --tier-color-legendary: #D685AD; /* Fairy */
+    --tier-color-mythical: #F95587; /* Psychic */
+    --tier-color-ultra-beast: #705746; /* Dark */
+
+    /* Fluid Font Sizes using clamp(MIN, IDEAL, MAX). This makes text scale smoothly with the viewport size. */
+    --font-size-xs: clamp(0.6rem, 1.5vw, 1rem);
+    --font-size-sm: clamp(0.75rem, 2vw, 1.1rem);
+    --font-size-base: clamp(0.875rem, 2.5vw, 1.4rem);
+    --font-size-lg: clamp(1rem, 3vw, 1.8rem);
+    --font-size-xl: clamp(1.125rem, 4vw, 2.2rem);
+    --font-size-2xl: clamp(1.25rem, 5vw, 2.5rem);
+}
+
+html, body {
+    height: 100vh; /* Ensure the body takes up the full viewport height. */
+}
+
+body { 
+    font-family: 'Press Start 2P', cursive; /* The global pixel font. */
+    background-color: #0f172a; /* Dark blue background. */
+    /* These properties disable font anti-aliasing to achieve a sharp, pixelated look. */
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    font-smooth: never;
+    font-size: var(--font-size-sm); /* Use a fluid font size as the base. */
+}
+
+/* Ensure form elements also use the pixel font for consistency. */
+button, input, select {
+    font-family: 'Press Start 2P', cursive; 
+}
+
+/* --- ADAPTIVE PLAYER GRID --- */
+/* The main container for the player cards, using CSS Grid for layout. */
+#player-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* 6 equal-width columns by default. */
+    grid-template-rows: 1fr;
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 10;
+    padding: 1rem;
+}
+
+
+/* --- PLAYER CARD STYLES --- */
+.player-card {
+    background-color: rgba(15, 23, 42, 0.8); /* Semi-transparent background */
+    border: 4px solid #475569;
+    transition: all 0.3s ease;
+    position: relative; /* For positioning child elements like holo effects and turn indicators. */
+    overflow: hidden;
+    display: flex; /* Use flexbox to structure the content vertically. */
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(0.5rem, 2vw, 1rem); /* Fluid padding. */
+    height: 100%;
+}
+
+/* --- TIER BORDER STYLES --- */
+/* Classes to change the border color based on the Pokémon's tier. */
+.tier-border-basic { border-color: var(--tier-color-basic); }
+.tier-border-mid { border-color: var(--tier-color-mid); }
+.tier-border-final { border-color: var(--tier-color-final); }
+/* Higher tiers get an additional box-shadow to make them 'glow'. */
+.tier-border-mega, .tier-border-gmax { 
+    border-color: var(--tier-color-mega);
+    box-shadow: 0 0 5px var(--tier-color-mega);
+}
+.tier-border-legendary, .tier-border-mythical, .tier-border-ultra-beast {
+    border-color: var(--tier-color-legendary);
+    box-shadow: 0 0 20px var(--tier-color-legendary);
+}
+
+
+/* --- HOLOGRAPHIC CARD STYLES --- */
+/* A purely CSS effect to create a moving, reflective shine on rare cards. */
+.player-card.holo-silver::before,
+.player-card.holo-gold::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-size: 200% 200%;
+    animation: holo-shine 5s linear infinite; /* The animation that moves the shine. */
+    opacity: 0.2; /* Subtle effect. */
+    z-index: 0; /* Positioned behind the card content. */
+}
+/* The silver holographic shine is a transparent-to-white gradient. */
+.player-card.holo-silver::before {
+    background-image: linear-gradient(115deg, 
+        transparent 20%, 
+        rgba(220, 220, 255, 0.7) 48%, 
+        rgba(200, 200, 240, 0.7) 52%, 
+        transparent 80%);
+}
+/* The gold holographic shine is a transparent-to-gold gradient. */
+.player-card.holo-gold::before {
+    background-image: linear-gradient(115deg, 
+        transparent 20%, 
+        rgba(255, 235, 180, 0.7) 48%, 
+        rgba(255, 215, 100, 0.7) 52%, 
+        transparent 80%);
+}
+
+/* The animation continuously moves the background position of the gradient. */
+@keyframes holo-shine {
+    0% { background-position: 200% 200%; }
+    100% { background-position: -200% -200%; }
+}
+
+/* Ensure the card's actual content appears above the holographic effect. */
+.player-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Typography for the card content. */
+.player-card h2 { font-size: var(--font-size-xl); }
+.player-card h3 { font-size: var(--font-size-lg); min-height: 2rem; display: flex; align-items: center; justify-content: center; line-height: 1.1; padding: 0 0.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+.pokemon-tier { text-align: center; color: #cbd5e1; font-size: var(--font-size-xs); font-weight: normal; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 1rem; text-shadow: 1px 1px 0 #000; }
+.pokemon-tier .tier-label { color: #94a3b8; }
+
+.player-card .grid-cols-5 { font-size: var(--font-size-base); column-gap: 0.75rem; row-gap: 0.5rem; margin-top: 0.5rem; }
+
+/* Dynamic classes added by JavaScript to indicate game state. */
+.player-card.active-turn { border-color: #f59e0b !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); animation: pulse-yellow 1.5s infinite; }
+.player-card.selected-target { border-color: #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+.player-card.selected-status-target { border-color: #a855f7 !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+
+.pokemon-sprite { 
+    image-rendering: pixelated; /* Ensures the sprites look sharp and not blurry. */
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.2)); 
+    transition: transform 0.3s ease;
+    object-fit: contain;
+    width: clamp(8rem, 18vw, 16rem);
+    height: clamp(8rem, 18vw, 16rem);
+}
+
+/* --- SEGMENTED HP METER STYLES --- */
+/* This is a complex component built from several layered elements to create a radial gauge. */
+.hp-gauge-container { position: relative; width: clamp(120px, 20vw, 220px); height: clamp(120px, 20vw, 220px); display: flex; justify-content: center; align-items: center; margin-top: 1rem; }
+.hp-gauge-segments-container { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
+/* Each segment is a small bar inside a rotated container. */
+.hp-segment-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.hp-segment-visual { position: absolute; top: 0; left: calc(50% - 4px); width: 8px; height: 16px; background-color: white; border-radius: 4px; }
+/* The needle's rotation is controlled by an inline style set by JavaScript. */
+.hp-gauge-needle { position: absolute; bottom: 50%; left: calc(50% - 3px); width: 6px; height: 50px; background: #e2e8f0; clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%); transform-origin: bottom center; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); z-index: 10; }
+/* The center circle displays the numeric HP. */
+.hp-gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: clamp(60px, 12vw, 110px); height: clamp(60px, 12vw, 110px); background: #1e293b; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffffff; z-index: 12; border: 4px solid #475569; cursor: pointer; padding-top: 4px; box-sizing: border-box; }
+.hp-gauge-center .current-hp { font-size: var(--font-size-lg); font-weight: bold; line-height: 1.2; }
+.hp-gauge-center .max-hp { font-size: var(--font-size-xs); color: #94a3b8; line-height: 1; margin-top: 2px; }
+/* The decorative pivot point in the very center. */
+.hp-gauge-pivot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; background: #475569; border-radius: 50%; z-index: 11; border: 2px solid #94a3b8; }
+
+
+/* --- MISC & UI ELEMENT STYLES --- */
+.type-badge { font-family: sans-serif; font-weight: bold; font-size: var(--font-size-xs); color: white; padding: 4px 12px; border-radius: 9999px !important; border: 3px solid white; box-shadow: 0 0 0 1px black; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.modal-overlay.visible { opacity: 1; pointer-events: auto; }
+.modal-content { background-color: #1e293b; border: 2px solid #475569; padding: 1.5rem; width: 90%; max-width: 900px; transform: scale(0.95); transition: transform 0.3s ease; }
+.modal-overlay.visible .modal-content { transform: scale(1); }
+
+.timer.low-time { color: #ef4444; animation: pulse-red 1s infinite; }
+.stat-paralyzed { color: #facc15; text-shadow: 0 0 5px #facc15; }
+.status-button-active { background-color: white !important; color: black !important; }
+
+/* Remove default browser styling from form elements for a consistent pixel look. */
+select, input[type="text"], input[type="number"] { -webkit-appearance: none; -moz-appearance: none; appearance: none; border-radius: 0; box-shadow: inset 2px 2px 0px #1a202c; }
+/* Force sharp corners on all elements to maintain the retro aesthetic. */
+* { border-radius: 0 !important; }
+
+.team-pokeball { cursor: pointer; transition: transform 0.2s; width: clamp(2.5rem, 6vw, 3.5rem); height: clamp(2.5rem, 6vw, 3.5rem); }
+.team-pokeball:hover { transform: scale(1.1); }
+.player-card .grid-cols-6 { margin-top: 0.5rem; }
+
+/* --- BUTTON STYLES --- */
+/* Custom styles for the main action buttons in the control panel. */
+#physical-attack-btn, #special-attack-btn, #evolve-btn, #change-form-btn, #revive-btn { font-family: sans-serif; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; border: 3px solid black; border-radius: 9999px !important; padding: 0.5rem; transition: transform 0.1s ease-out; cursor: pointer; }
+#physical-attack-btn:active, #special-attack-btn:active, #evolve-btn:active, #change-form-btn:active, #revive-btn:active { transform: scale(0.95); }
+#physical-attack-btn { background-image: linear-gradient(to bottom, #fca5a5, #ef4444); }
+#special-attack-btn { background-image: linear-gradient(to bottom, #93c5fd, #3b82f6); }
+#evolve-btn { background-image: linear-gradient(to bottom, #a5b4fc, #6366f1); }
+#change-form-btn { background-image: linear-gradient(to bottom, #c084fc, #a855f7); }
+#revive-btn { background-image: linear-gradient(to bottom, #fde047, #f59e0b); }
+#evolve-btn:disabled, #change-form-btn:disabled, #revive-btn:disabled { background-image: linear-gradient(to bottom, #6b7280, #4b5563); cursor: not-allowed; opacity: 0.6; }
+
+
+/* --- ANIMATION KEYFRAMES --- */
+/* Defines the animations used throughout the application. */
+
+/* For the announcement banner at the top of the screen. */
+.announcement-enter { animation: fadeIn 0.5s forwards; }
+.announcement-exit { animation: fadeOut 0.5s 2s forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes fadeOut { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 20px); } }
+
+/* For pulsing the border of the active player card. */
+@keyframes pulse-yellow { 0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); } 50% { box-shadow: 0 0 35px rgba(245, 158, 11, 1); } }
+@keyframes pulse-red { 50% { text-shadow: 0 0 10px #ef4444; } }
+
+/* For the bouncing arrow above the active player's card. */
+.turn-indicator-arrow { position: absolute; top: -15px; left: 50%; color: #f59e0b; filter: drop-shadow(0 0 5px #f59e0b); animation: bounce-arrow 1s infinite; z-index: 10; }
+@keyframes bounce-arrow { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
+
+/* --- VISUAL EFFECT ANIMATIONS --- */
+/* These animations are applied to Pokémon sprites to give feedback for actions. */
+.damage-animation { animation: damage-shake 0.3s; }
+@keyframes damage-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+.heal-animation { animation: heal-glow 0.8s; }
+@keyframes heal-glow { 0%, 100% { filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.2)) brightness(1); } 50% { filter: drop-shadow(0 0 15px #22c55e) brightness(2); } }
+.evolve-animation { animation: evolve-flash 1s; }
+@keyframes evolve-flash { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(3); } }
+.faint-animation { animation: faint-out 0.8s forwards; }
+@keyframes faint-out { from { transform: rotate(0) scale(1); opacity: 1; } to { transform: rotate(20deg) scale(0); opacity: 0; } }
+.switch-out-animation { animation: switch-out 0.4s forwards; }
+@keyframes switch-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
+.switch-in-animation { animation: switch-in 0.4s forwards; }
+@keyframes switch-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* --- PARALLAX BACKGROUND STYLES --- */
+#parallax-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+.parallax-layer { position: absolute; top: 0; left: 0; width: 200%; height: 100%; background-repeat: repeat-x; background-position: 0 0; background-size: auto 100%; image-rendering: pixelated; animation: scroll linear infinite; }
+.parallax-layer.ground { background-size: auto 128px; background-position: bottom left; }
+/* The animation scrolls the background image horizontally. Different layers have different animation durations, creating the parallax effect. */
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* --- WEATHER EFFECTS --- */
+.weather-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
+#sandstorm-overlay { background-image: url('https://www.transparenttextures.com/patterns/sandpaper.png'); animation: sandstorm-scroll 1s linear infinite; opacity: 0.2; }
+@keyframes sandstorm-scroll { from { background-position: 0 0; } to { background-position: 256px 256px; } }
+#hail-overlay::before { content: ''; position: absolute; top: -100px; left: 0; width: 100%; height: calc(100% + 100px); background-image: radial-gradient(circle, white 1px, transparent 1px), radial-gradient(circle, white 1px, transparent 1px); background-size: 100px 100px, 50px 50px; background-position: 0 0, 25px 25px; animation: hail-fall 1.5s linear infinite; opacity: 0.5; }
+@keyframes hail-fall { from { transform: translateY(0); } to { transform: translateY(100px); } }
+
+/* --- TYPE-BASED ENTRY ANIMATIONS --- */
+/* These animations play when a Pokémon switches into battle. */
+.entry-animation-container { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
+.entry-animation-effect { position: absolute; animation-duration: 0.6s; animation-fill-mode: forwards; opacity: 0; }
+.entry-anim-fire { width: 100%; height: 100%; background: radial-gradient(circle, transparent 40%, var(--type-fire) 100%); animation-name: burst-fade; }
+@keyframes burst-fade { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+.entry-anim-water { width: 100%; height: 100%; background: radial-gradient(circle, var(--type-water) 10%, transparent 70%); animation-name: splash-fade; }
+@keyframes splash-fade { 0% { transform: scaleY(0); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+.entry-anim-default { width: 100%; height: 100%; background: radial-gradient(circle, white 10%, transparent 70%); animation-name: burst-fade; }
+
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+/* Media queries to adjust the layout for different screen sizes. */
+@media (min-width: 1921px) { .bottom-0 > .grid { max-width: 1600px; margin-left: auto; margin-right: auto; } }
+/* For tablets and small laptops */
+@media (max-width: 1400px) { #player-grid { grid-template-columns: repeat(3, 1fr); } .bottom-0 > .grid { grid-template-columns: repeat(2, 1fr); } }
+/* For mobile devices */
+@media (max-width: 767px) { #player-grid { grid-template-columns: repeat(2, 1fr); } .bottom-0 > .grid { grid-template-columns: 1fr; } .bottom-0 .grid > div { padding: 0.5rem; } .bottom-0 h4 { margin-bottom: 0.25rem; } .bottom-0 select, .bottom-0 input, .bottom-0 button { padding: 0.5rem; } .bottom-0 #update-stat-btn { height: 2.25rem; } }
+/* --- RESPONSIVE ADJUSTMENTS --- */
