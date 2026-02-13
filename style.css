@@ -282,4 +282,3 @@ select, input[type="text"], input[type="number"] { -webkit-appearance: none; -mo
 @media (max-width: 1400px) { #player-grid { grid-template-columns: repeat(3, 1fr); } .bottom-0 > .grid { grid-template-columns: repeat(2, 1fr); } }
 /* For mobile devices */
 @media (max-width: 767px) { #player-grid { grid-template-columns: repeat(2, 1fr); } .bottom-0 > .grid { grid-template-columns: 1fr; } .bottom-0 .grid > div { padding: 0.5rem; } .bottom-0 h4 { margin-bottom: 0.25rem; } .bottom-0 select, .bottom-0 input, .bottom-0 button { padding: 0.5rem; } .bottom-0 #update-stat-btn { height: 2.25rem; } }
-/* --- RESPONSIVE ADJUSTMENTS --- */
