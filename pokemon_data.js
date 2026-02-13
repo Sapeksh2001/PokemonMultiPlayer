@@ -19188,7 +19188,6 @@ Gmax: {
     cry: "https://play.pokemonshowdown.com/audio/cries/nidoking.mp3",
     evolutions: [],
     forms: {
-
     },
     tier: "Final"
   }
