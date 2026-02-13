@@ -1,638 +1,284 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon Battle Arena</title>
+/*
+ * POKÉMON BATTLE ARENA - STYLESHEET
+ * This file defines the entire visual appearance of the application.
+ * It uses a combination of custom CSS for the main battle arena and utility classes (from Tailwind) for modals.
+ * The aesthetic is intentionally retro and pixelated.
+ */
 
-    <!-- External Dependencies -->
-    <!-- Lucide for crisp SVG icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Tone.js for web audio and sound effects -->
-    <script src="https://unpkg.com/tone@latest/build/Tone.js"></script>
-    <!-- Google Font for the retro, pixelated aesthetic -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS for rapid, utility-first styling, primarily for modals and layout -->
-    <script src="https://cdn.tailwindcss.com"></script>
+/* --- CSS VARIABLES & GLOBAL STYLES --- */
+:root {
+    /* Color variables for each Pokémon type, used for badges and other UI elements. */
+    --type-normal: #A8A77A; --type-fire: #EE8130; --type-water: #6390F0; --type-electric: #F7D02C;
+    --type-grass: #7AC74C; --type-ice: #96D9D6; --type-fighting: #C22E28; --type-poison: #A33EA1;
+    --type-ground: #E2BF65; --type-flying: #A98FF3; --type-psychic: #F95587; --type-bug: #A6B91A;
+    --type-rock: #B6A136; --type-ghost: #735797; --type-dragon: #6F35FC; --type-dark: #705746;
+    --type-steel: #B7B7CE; --type-fairy: #D685AD;
 
-    <!-- Local Stylesheets with Cache Busting -->
-    <link id="main-stylesheet" rel="stylesheet" href="">
-    <script>
-        // Dynamically set the stylesheet href with a timestamp to prevent the browser from using an old, cached version.
-        // This is a common development technique to ensure style changes are always reflected immediately.
-        document.getElementById('main-stylesheet').href = 'style.css?t=' + new Date().getTime();
-    </script>
+    /* A gradient of colors used for the segments of the HP meter. */
+    --hp-color-red: #e63946;
+    --hp-color-orange: #f77f00;
+    --hp-color-yellow-orange: #fcbf49;
+    --hp-color-yellow: #ffdd00;
+    --hp-color-yellow-green: #a9dc4c;
+    --hp-color-green: #4caf50;
 
-    <!-- Tailwind CSS Configuration -->
-    <script>
-        // We extend the default Tailwind theme to include our custom pixel font.
-        // This allows us to use classes like `font-pixel` throughout the HTML.
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'pixel': ['"Press Start 2P"', 'cursive'],
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="font-pixel text-white bg-slate-900 min-h-screen overflow-x-hidden">
+    /* Colors assigned to different Pokémon tiers for styling card borders. */
+    --tier-color-basic: #a8a77a; /* Normal */
+    --tier-color-mid: #6390F0; /* Water */
+    --tier-color-final: #B7B7CE; /* Steel */
+    --tier-color-mega: #EE8130; /* Fire */
+    --tier-color-gmax: #F7D02C; /* Electric */
+    --tier-color-legendary: #D685AD; /* Fairy */
+    --tier-color-mythical: #F95587; /* Psychic */
+    --tier-color-ultra-beast: #705746; /* Dark */
 
-    <!-- ===== SHARED ELEMENTS ===== -->
-    <!-- These elements are visible across different views of the application. -->
+    /* Fluid Font Sizes using clamp(MIN, IDEAL, MAX). This makes text scale smoothly with the viewport size. */
+    --font-size-xs: clamp(0.6rem, 1.5vw, 1rem);
+    --font-size-sm: clamp(0.75rem, 2vw, 1.1rem);
+    --font-size-base: clamp(0.875rem, 2.5vw, 1.4rem);
+    --font-size-lg: clamp(1rem, 3vw, 1.8rem);
+    --font-size-xl: clamp(1.125rem, 4vw, 2.2rem);
+    --font-size-2xl: clamp(1.25rem, 5vw, 2.5rem);
+}
 
-    <!-- Parallax Background: A series of layered divs that scroll at different speeds to create an illusion of depth. -->
-    <div id="parallax-bg">
-        <div class="parallax-layer" data-speed="1" style="animation-duration: 120s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-1.png');"></div>
-        <div class="parallax-layer" data-speed="2" style="animation-duration: 80s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-2.png');"></div>
-        <div class="parallax-layer" data-speed="3" style="animation-duration: 60s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/plx-3.png');"></div>
-        <div class="parallax-layer ground" data-speed="4" style="animation-duration: 40s; background-image: url('https://raw.githubusercontent.com/Sapeksh2001/Prallax-Window/main/ground.png');"></div>
-    </div>
+html, body {
+    height: 100vh; /* Ensure the body takes up the full viewport height. */
+}
 
-    <!-- Weather Effects: Overlays that are toggled by JavaScript to show weather conditions like sandstorms or hail. -->
-    <div id="sandstorm-overlay" class="weather-effect hidden"></div>
-    <div id="hail-overlay" class="weather-effect hidden"></div>
+body { 
+    font-family: 'Press Start 2P', cursive; /* The global pixel font. */
+    background-color: #0f172a; /* Dark blue background. */
+    /* These properties disable font anti-aliasing to achieve a sharp, pixelated look. */
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    font-smooth: never;
+    font-size: var(--font-size-sm); /* Use a fluid font size as the base. */
+}
 
-    <!-- Announcement Banner: A pop-up banner for displaying game messages (e.g., "It's super effective!"). -->
-    <div id="announcement-banner" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 border-2 px-6 py-3 z-50 hidden">
-        <p id="announcement-text" class="text-sm"></p>
-    </div>
+/* Ensure form elements also use the pixel font for consistency. */
+button, input, select {
+    font-family: 'Press Start 2P', cursive; 
+}
 
-    <!-- Loading Screen: Shown during transitions, for example, when moving from the lobby to the arena. -->
-    <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center hidden">
-        <div class="text-center">
-            <div class="animate-spin w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <div class="text-xl text-yellow-400 mb-2">Loading Battle Arena...</div>
-            <div class="text-sm text-slate-400">Preparing Pokémon data...</div>
-        </div>
-    </div>
-
-
-    <!-- ===== LOBBY VIEW ===== -->
-    <!-- The initial screen the user sees. It contains the main menu and settings. -->
-    <div id="lobby-view">
-        <div class="flex flex-col items-center justify-center min-h-screen relative z-10 px-4">
-            <!-- Header Logo -->
-            <header class="text-center mb-12 animate-pulse">
-                <h1 class="text-4xl md:text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg">
-                    ⚡ POKÉMON ⚡
-                </h1>
-                <h2 class="text-2xl md:text-3xl font-bold text-white mb-2">
-                    BATTLE ARENA
-                </h2>
-                <div class="text-sm text-slate-300">
-                    Competitive Battle Simulator
-                </div>
-            </header>
-
-            <!-- Main Menu Card -->
-            <div class="bg-slate-800/90 border-4 border-slate-600 p-8 max-w-md w-full backdrop-blur-sm">
-                <div class="text-center mb-6">
-                    <h3 class="text-lg text-yellow-400 mb-2">Welcome, Trainer!</h3>
-                    <p class="text-sm text-slate-300 leading-relaxed">
-                        Prepare for intense Pokémon battles with up to 6 trainers.
-                        Build your team and prove your skills!
-                    </p>
-                </div>
-
-                <!-- Menu Options -->
-                <div class="space-y-4">
-                    <button id="quick-battle-btn" class="w-full bg-green-600 hover:bg-green-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
-                        <div class="flex items-center justify-center gap-3">
-                            <i data-lucide="zap" class="w-5 h-5"></i>
-                            <span>QUICK BATTLE</span>
-                        </div>
-                        <div class="text-xs text-green-200 mt-1">Start battling immediately</div>
-                    </button>
-                    <button id="create-room-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
-                        <div class="flex items-center justify-center gap-3">
-                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                            <span>CREATE ROOM</span>
-                        </div>
-                        <div class="text-xs text-blue-200 mt-1">Host a custom battle</div>
-                    </button>
-                    <button id="join-room-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
-                        <div class="flex items-center justify-center gap-3">
-                            <i data-lucide="users" class="w-5 h-5"></i>
-                            <span>JOIN ROOM</span>
-                        </div>
-                        <div class="text-xs text-purple-200 mt-1">Enter with room code</div>
-                    </button>
-                    <button id="settings-btn" class="w-full bg-slate-600 hover:bg-slate-700 text-white p-4 border-2 border-black transition-all transform hover:scale-105 active:scale-95">
-                        <div class="flex items-center justify-center gap-3">
-                            <i data-lucide="settings" class="w-5 h-5"></i>
-                            <span>SETTINGS</span>
-                        </div>
-                        <div class="text-xs text-slate-300 mt-1">Game preferences</div>
-                    </button>
-                </div>
-
-                <!-- Player Name Input -->
-                <div class="mt-6 border-t border-slate-600 pt-4">
-                    <label class="block text-sm text-slate-300 mb-2">Trainer Name:</label>
-                    <input id="trainer-name-input" type="text" placeholder="Enter your name..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm text-white">
-                    <div class="text-xs text-slate-400 mt-1">This will be your display name in battles</div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <footer class="mt-8 text-center">
-                <div class="text-xs text-slate-500">
-                    <p>Press any button to enable audio</p>
-                    <p class="mt-1">© 2025 Pokémon Battle Arena</p>
-                </div>
-            </footer>
-        </div>
-    </div>
+/* --- ADAPTIVE PLAYER GRID --- */
+/* The main container for the player cards, using CSS Grid for layout. */
+#player-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* 6 equal-width columns by default. */
+    grid-template-rows: 1fr;
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 10;
+    padding: 1rem;
+}
 
 
-    <!-- ===== ARENA VIEW (Initially Hidden) ===== -->
-    <!-- This is the main battle screen, which becomes visible after leaving the lobby. -->
-    <div id="arena-view" class="hidden">
-        <div class="flex flex-col h-screen">
-            <!-- Header: Contains the game title, round counter, and timer controls. -->
-            <header class="bg-slate-800/90 border-b-4 border-slate-600 p-4 relative z-20">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
-                        <h1 class="text-xl font-bold text-yellow-400">🎮 POKÉMON BATTLE ARENA</h1>
-                        <button id="end-round-btn" class="bg-red-600 hover:bg-red-700 px-4 py-2 border-2 border-black transition-colors">
-                            END ROUND 1
-                        </button>
-                    </div>
-                    <!-- Timer -->
-                    <div class="flex items-center gap-2">
-                        <div id="timer-display" class="text-2xl font-bold bg-slate-700 px-4 py-2 border-2 border-slate-500">
-                            02:00
-                        </div>
-                        <button id="timer-start" class="bg-green-600 hover:bg-green-700 px-3 py-2 border-2 border-black">
-                            <i data-lucide="play" class="w-4 h-4"></i>
-                        </button>
-                        <button id="timer-pause" class="bg-yellow-600 hover:bg-yellow-700 px-3 py-2 border-2 border-black">
-                            <i data-lucide="pause" class="w-4 h-4"></i>
-                        </button>
-                        <button id="timer-reset" class="bg-slate-600 hover:bg-slate-700 px-3 py-2 border-2 border-black">
-                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            </header>
+/* --- PLAYER CARD STYLES --- */
+.player-card {
+    background-color: rgba(15, 23, 42, 0.8); /* Semi-transparent background */
+    border: 4px solid #475569;
+    transition: all 0.3s ease;
+    position: relative; /* For positioning child elements like holo effects and turn indicators. */
+    overflow: hidden;
+    display: flex; /* Use flexbox to structure the content vertically. */
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(0.5rem, 2vw, 1rem); /* Fluid padding. */
+    height: 100%;
+}
 
-            <!-- Player Grid: The main area where all the player cards are displayed. -->
-            <main class="flex-1 relative flex">
-                <div id="player-grid">
-                    <!-- Player cards will be dynamically generated and inserted here by script.js -->
-                </div>
-            </main>
-
-            <!-- Control Panel: The footer containing all game master controls for attacks, statuses, etc. -->
-            <footer class="bg-slate-800/95 border-t-4 border-slate-600 p-4 relative z-20">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <!-- Attack Command Section -->
-                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
-                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Attack Command</h4>
-                        <div class="space-y-2 text-xs">
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="text-slate-300">ATTACKER</label>
-                                <label class="text-slate-300">TARGET</label>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <select id="attacker-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    <option value="">Select Attacker</option>
-                                </select>
-                                <select id="attack-target-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    <option value="">Select Target</option>
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="text-slate-300">POWER</label>
-                                <label class="text-slate-300">MOVE TYPE</label>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input id="move-power-input" type="number" placeholder="Power" class="bg-slate-600 border border-slate-400 p-1 text-xs" min="0" max="999">
-                                <select id="move-type-select" class="bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    <option value="">Move Type</option>
-                                </select>
-                            </div>
-                            <div id="type-effectiveness-display" class="text-center text-xs bg-slate-600 p-1 border border-slate-400">
-                                EFFECTIVENESS: --
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 mt-2">
-                                <button id="physical-attack-btn" class="text-xs py-2">DEAL PHYSICAL DMG</button>
-                                <button id="special-attack-btn" class="text-xs py-2">DEAL SPECIAL DMG</button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Status & Stats Section -->
-                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
-                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Status & Stats</h4>
-                        <div class="space-y-2 text-xs">
-                            <div class="grid grid-cols-3 gap-1">
-                                <button id="curse-btn" data-status="curse" class="status-btn bg-purple-600 hover:bg-purple-700 p-1 border border-black text-xs">Crs</button>
-                                <button id="poison-btn" data-status="poison" class="status-btn bg-purple-800 hover:bg-purple-900 p-1 border border-black text-xs">Psn</button>
-                                <button id="paralyze-btn" data-status="paralyze" class="status-btn bg-yellow-600 hover:bg-yellow-700 p-1 border border-black text-xs">Par</button>
-                            </div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button id="weather-btn" class="bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs">Wth</button>
-                                <button id="burn-btn" data-status="burn" class="status-btn bg-red-600 hover:bg-red-700 p-1 border border-black text-xs">Brn</button>
-                                <button id="toxic-btn" data-status="bad_poison" class="status-btn bg-purple-900 hover:bg-purple-950 p-1 border border-black text-xs">Tox</button>
-                            </div>
-                            <div>
-                                <label class="text-slate-300 block mb-1">TARGET</label>
-                                <select id="status-target-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    <option value="">Select Target</option>
-                                </select>
-                            </div>
-                            <!-- Stat Modification -->
-                            <div class="space-y-1">
-                                <div class="grid grid-cols-3 gap-1 mb-1">
-                                    <label class="text-slate-300 text-xs">STAT</label>
-                                    <label class="text-slate-300 text-xs">ACTION</label>
-                                    <label class="text-slate-300 text-xs">VALUE</label>
-                                </div>
-                                <div class="grid grid-cols-3 gap-1">
-                                    <select id="stat-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
-                                        <option value="">Stat</option>
-                                        <option value="hp">HP</option>
-                                        <option value="atk">Attack</option>
-                                        <option value="def">Defense</option>
-                                        <option value="spa">Sp. Atk</option>
-                                        <option value="spd">Sp. Def</option>
-                                        <option value="spe">Speed</option>
-                                    </select>
-                                    <select id="stat-mod-type" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
-                                        <option value="set">Set To</option>
-                                        <option value="+">Add</option>
-                                        <option value="-">Sub</option>
-                                        <option value="+%">Add %</option>
-                                        <option value="-%">Sub %</option>
-                                    </select>
-                                    <input id="stat-value-input" type="number" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs" placeholder="Value">
-                                </div>
-                                <button id="update-stat-btn" class="w-full bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs mt-1">
-                                    UPDATE
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Utility Section -->
-                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
-                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Utility</h4>
-                        <div class="space-y-2 text-xs">
-                            <div class="text-center">
-                                <label class="text-slate-300 block mb-1">ACCURACY CHECK (1-100)</label>
-                                <div id="random-number-display" class="bg-slate-600 border border-slate-400 p-2 text-lg font-bold">--</div>
-                                <button id="generate-number-btn" class="w-full bg-green-600 hover:bg-green-700 p-1 border border-black mt-1">GENERATE</button>
-                            </div>
-                            <div class="border-t border-slate-500 pt-2">
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="text-slate-300 block mb-1">NEW PLAYER</label>
-                                        <input id="new-player-name" type="text" placeholder="Player Name" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button id="add-player-btn" class="w-full bg-blue-600 hover:bg-blue-700 p-1 border border-black text-xs">ADD</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Management Section -->
-                    <div class="bg-slate-700 p-3 border-2 border-slate-500">
-                        <h4 class="text-yellow-400 text-xs mb-2 uppercase tracking-wide">Management</h4>
-                        <div class="space-y-2 text-xs">
-                            <div>
-                                <label class="text-slate-300 block mb-1">SELECT POKÉMON</label>
-                                <select id="management-pokemon-select" class="w-full bg-slate-600 border border-slate-400 p-1 text-xs">
-                                    <option value="">Select an Option</option>
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button id="evolve-btn" class="text-xs py-1" disabled>EVOLVE</button>
-                                <button id="change-form-btn" class="text-xs py-1" disabled>CHANGE FORM</button>
-                                <button id="revive-btn" class="text-xs py-1" disabled>REVIVE</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </footer>
-        </div>
-    </div>
+/* --- TIER BORDER STYLES --- */
+/* Classes to change the border color based on the Pokémon's tier. */
+.tier-border-basic { border-color: var(--tier-color-basic); }
+.tier-border-mid { border-color: var(--tier-color-mid); }
+.tier-border-final { border-color: var(--tier-color-final); }
+/* Higher tiers get an additional box-shadow to make them 'glow'. */
+.tier-border-mega, .tier-border-gmax { 
+    border-color: var(--tier-color-mega);
+    box-shadow: 0 0 5px var(--tier-color-mega);
+}
+.tier-border-legendary, .tier-border-mythical, .tier-border-ultra-beast {
+    border-color: var(--tier-color-legendary);
+    box-shadow: 0 0 20px var(--tier-color-legendary);
+}
 
 
-    <!-- ===== MODALS ===== -->
-    <!-- These are overlay windows that appear for specific actions. They are hidden by default. -->
+/* --- HOLOGRAPHIC CARD STYLES --- */
+/* A purely CSS effect to create a moving, reflective shine on rare cards. */
+.player-card.holo-silver::before,
+.player-card.holo-gold::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-size: 200% 200%;
+    animation: holo-shine 5s linear infinite; /* The animation that moves the shine. */
+    opacity: 0.2; /* Subtle effect. */
+    z-index: 0; /* Positioned behind the card content. */
+}
+/* The silver holographic shine is a transparent-to-white gradient. */
+.player-card.holo-silver::before {
+    background-image: linear-gradient(115deg, 
+        transparent 20%, 
+        rgba(220, 220, 255, 0.7) 48%, 
+        rgba(200, 200, 240, 0.7) 52%, 
+        transparent 80%);
+}
+/* The gold holographic shine is a transparent-to-gold gradient. */
+.player-card.holo-gold::before {
+    background-image: linear-gradient(115deg, 
+        transparent 20%, 
+        rgba(255, 235, 180, 0.7) 48%, 
+        rgba(255, 215, 100, 0.7) 52%, 
+        transparent 80%);
+}
 
-    <!-- Room Creation Modal -->
-    <div id="room-modal" class="modal-overlay">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-yellow-400">Create Battle Room</h2>
-                <button id="close-room-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Room Name:</label>
-                    <input id="room-name-input" type="text" placeholder="Epic Battle Room..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Max Players:</label>
-                    <select id="max-players-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
-                        <option value="2">2 Players</option>
-                        <option value="3">3 Players</option>
-                        <option value="4">4 Players</option>
-                        <option value="5">5 Players</option>
-                        <option value="6">6 Players</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Battle Type:</label>
-                    <select id="battle-type-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
-                        <option value="standard">Standard Battle</option>
-                        <option value="tournament">Tournament Style</option>
-                        <option value="elimination">Elimination</option>
-                        <option value="custom">Custom Rules</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Round Timer:</label>
-                    <select id="timer-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
-                        <option value="60">1 Minute</option>
-                        <option value="120" selected>2 Minutes</option>
-                        <option value="180">3 Minutes</option>
-                        <option value="300">5 Minutes</option>
-                        <option value="0">No Timer</option>
-                    </select>
-                </div>
-                <button id="create-room-confirm-btn" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 border-2 border-black">CREATE ROOM</button>
-            </div>
-        </div>
-    </div>
+/* The animation continuously moves the background position of the gradient. */
+@keyframes holo-shine {
+    0% { background-position: 200% 200%; }
+    100% { background-position: -200% -200%; }
+}
 
-    <!-- Join Room Modal -->
-    <div id="join-modal" class="modal-overlay">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-yellow-400">Join Battle Room</h2>
-                <button id="close-join-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Room Code:</label>
-                    <input id="room-code-input" type="text" placeholder="Enter 6-digit code..." class="w-full bg-slate-700 border border-slate-500 p-3 text-sm uppercase tracking-widest text-center" maxlength="6">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Or select from available rooms:</label>
-                    <div class="space-y-2 max-h-40 overflow-y-auto">
-                        <!-- Example room list items -->
-                        <button class="room-option w-full bg-slate-700 hover:bg-slate-600 p-3 text-left border border-slate-500">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <div class="text-sm font-bold">Epic Gym Battle</div>
-                                    <div class="text-xs text-slate-400">3/6 players • Standard</div>
-                                </div>
-                                <div class="text-xs text-green-400">ABC123</div>
-                            </div>
-                        </button>
-                        <button class="room-option w-full bg-slate-700 hover:bg-slate-600 p-3 text-left border border-slate-500">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <div class="text-sm font-bold">Elite Four Challenge</div>
-                                    <div class="text-xs text-slate-400">1/4 players • Tournament</div>
-                                </div>
-                                <div class="text-xs text-green-400">DEF456</div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-                <button id="join-room-confirm-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 border-2 border-black">JOIN ROOM</button>
-            </div>
-        </div>
-    </div>
+/* Ensure the card's actual content appears above the holographic effect. */
+.player-card > * {
+    position: relative;
+    z-index: 1;
+}
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-yellow-400">Game Settings</h2>
-                <button id="close-settings-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Sound Volume:</label>
-                    <input id="volume-slider" type="range" min="0" max="100" value="70" class="w-full bg-slate-700 border border-slate-500">
-                    <div id="volume-display" class="text-xs text-slate-400 text-center mt-1">70%</div>
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-2">Animation Speed:</label>
-                    <select id="animation-speed-select" class="w-full bg-slate-700 border border-slate-500 p-3 text-sm">
-                        <option value="slow">Slow</option>
-                        <option value="normal" selected>Normal</option>
-                        <option value="fast">Fast</option>
-                        <option value="instant">Instant</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-3">
-                    <input id="autosave-checkbox" type="checkbox" checked class="w-4 h-4">
-                    <label class="text-sm text-slate-300">Enable Auto-save</label>
-                </div>
-                <div class="flex items-center gap-3">
-                    <input id="damage-numbers-checkbox" type="checkbox" checked class="w-4 h-4">
-                    <label class="text-sm text-slate-300">Show Damage Numbers</label>
-                </div>
-                <button id="save-settings-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 border-2 border-black">SAVE SETTINGS</button>
-            </div>
-        </div>
-    </div>
+/* Typography for the card content. */
+.player-card h2 { font-size: var(--font-size-xl); }
+.player-card h3 { font-size: var(--font-size-lg); min-height: 2rem; display: flex; align-items: center; justify-content: center; line-height: 1.1; padding: 0 0.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+.pokemon-tier { text-align: center; color: #cbd5e1; font-size: var(--font-size-xs); font-weight: normal; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 1rem; text-shadow: 1px 1px 0 #000; }
+.pokemon-tier .tier-label { color: #94a3b8; }
 
-    <!-- Team Management Modal: The most complex modal, for editing a player's team of Pokémon. -->
-    <div id="team-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="team-modal-title" class="text-lg font-bold text-yellow-400">Manage Team</h2>
-                <button id="close-team-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div id="team-editor-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4"></div>
-            <div id="pokemon-editor-form" class="bg-slate-600 p-4 border-2 border-slate-400 hidden">
-                <!-- This form is dynamically populated by script.js when a user wants to add/edit a Pokémon. -->
-            </div>
-            <div class="flex justify-end mt-4">
-                <button id="confirm-team-btn" class="bg-green-600 hover:bg-green-700 px-6 py-2 border-2 border-black">Confirm Team</button>
-            </div>
-        </div>
-    </div>
+.player-card .grid-cols-5 { font-size: var(--font-size-base); column-gap: 0.75rem; row-gap: 0.5rem; margin-top: 0.5rem; }
 
-    <!-- Selection Modal: A generic modal used for presenting choices like evolutions or forms. -->
-    <div id="selection-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="selection-modal-title" class="text-lg font-bold text-yellow-400">Select an Option</h2>
-                <button id="close-selection-modal" class="text-white hover:text-red-400"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div id="selection-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-        </div>
-    </div>
+/* Dynamic classes added by JavaScript to indicate game state. */
+.player-card.active-turn { border-color: #f59e0b !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); animation: pulse-yellow 1.5s infinite; }
+.player-card.selected-target { border-color: #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+.player-card.selected-status-target { border-color: #a855f7 !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
 
-    <!-- ===== SCRIPTS ===== -->
-    <!-- The pokemon_data.js file is expected to contain the database of all Pokémon stats, types, etc. -->
-    <script src="pokemon_data.js" defer></script>
-    <!-- The main battle logic from script.js, which controls the Arena View. -->
-    <script src="script.js" defer></script> 
-    <script>
-        // LOBBY SCRIPT: This inline script handles the logic for the initial Lobby View.
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Shared/Lobby Initializations ---
-            let synth, polySynth;
+.pokemon-sprite { 
+    image-rendering: pixelated; /* Ensures the sprites look sharp and not blurry. */
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.2)); 
+    transition: transform 0.3s ease;
+    object-fit: contain;
+    width: clamp(8rem, 18vw, 16rem);
+    height: clamp(8rem, 18vw, 16rem);
+}
 
-            // Initialize Tone.js audio on the first user interaction to comply with browser autoplay policies.
-            document.body.addEventListener('click', () => Tone.start(), { once: true });
-            synth = new Tone.Synth().toDestination();
-            polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+/* --- SEGMENTED HP METER STYLES --- */
+/* This is a complex component built from several layered elements to create a radial gauge. */
+.hp-gauge-container { position: relative; width: clamp(120px, 20vw, 220px); height: clamp(120px, 20vw, 220px); display: flex; justify-content: center; align-items: center; margin-top: 1rem; }
+.hp-gauge-segments-container { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
+/* Each segment is a small bar inside a rotated container. */
+.hp-segment-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.hp-segment-visual { position: absolute; top: 0; left: calc(50% - 4px); width: 8px; height: 16px; background-color: white; border-radius: 4px; }
+/* The needle's rotation is controlled by an inline style set by JavaScript. */
+.hp-gauge-needle { position: absolute; bottom: 50%; left: calc(50% - 3px); width: 6px; height: 50px; background: #e2e8f0; clip-path: polygon(20% 0, 80% 0, 100% 100%, 0% 100%); transform-origin: bottom center; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); z-index: 10; }
+/* The center circle displays the numeric HP. */
+.hp-gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: clamp(60px, 12vw, 110px); height: clamp(60px, 12vw, 110px); background: #1e293b; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffffff; z-index: 12; border: 4px solid #475569; cursor: pointer; padding-top: 4px; box-sizing: border-box; }
+.hp-gauge-center .current-hp { font-size: var(--font-size-lg); font-weight: bold; line-height: 1.2; }
+.hp-gauge-center .max-hp { font-size: var(--font-size-xs); color: #94a3b8; line-height: 1; margin-top: 2px; }
+/* The decorative pivot point in the very center. */
+.hp-gauge-pivot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15px; height: 15px; background: #475569; border-radius: 50%; z-index: 11; border: 2px solid #94a3b8; }
 
-            // Initialize Lucide icons on the page.
-            lucide.createIcons();
 
-            // Load saved trainer name from browser's local storage.
-            const savedName = localStorage.getItem('trainerName');
-            if (savedName) {
-                document.getElementById('trainer-name-input').value = savedName;
-            }
+/* --- MISC & UI ELEMENT STYLES --- */
+.type-badge { font-family: sans-serif; font-weight: bold; font-size: var(--font-size-xs); color: white; padding: 4px 12px; border-radius: 9999px !important; border: 3px solid white; box-shadow: 0 0 0 1px black; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
 
-            // --- Sound Functions ---
-            function playClickSound() {
-                if (synth) synth.triggerAttackRelease("C5", "8n");
-            }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.modal-overlay.visible { opacity: 1; pointer-events: auto; }
+.modal-content { background-color: #1e293b; border: 2px solid #475569; padding: 1.5rem; width: 90%; max-width: 900px; transform: scale(0.95); transition: transform 0.3s ease; }
+.modal-overlay.visible .modal-content { transform: scale(1); }
 
-            function playConfirmSound() {
-                if (polySynth) polySynth.triggerAttackRelease(["C4", "G4"], "8n");
-            }
+.timer.low-time { color: #ef4444; animation: pulse-red 1s infinite; }
+.stat-paralyzed { color: #facc15; text-shadow: 0 0 5px #facc15; }
+.status-button-active { background-color: white !important; color: black !important; }
 
-            // --- Modal Functions ---
-            function toggleModal(modal, show) {
-                modal.classList.toggle('visible', show);
-            }
+/* Remove default browser styling from form elements for a consistent pixel look. */
+select, input[type="text"], input[type="number"] { -webkit-appearance: none; -moz-appearance: none; appearance: none; border-radius: 0; box-shadow: inset 2px 2px 0px #1a202c; }
+/* Force sharp corners on all elements to maintain the retro aesthetic. */
+* { border-radius: 0 !important; }
 
-            // --- Lobby Logic Functions ---
-            function generateRoomCode() {
-                return Math.random().toString(36).substr(2, 6).toUpperCase();
-            }
+.team-pokeball { cursor: pointer; transition: transform 0.2s; width: clamp(2.5rem, 6vw, 3.5rem); height: clamp(2.5rem, 6vw, 3.5rem); }
+.team-pokeball:hover { transform: scale(1.1); }
+.player-card .grid-cols-6 { margin-top: 0.5rem; }
 
-            function saveTrainerName() {
-                const name = document.getElementById('trainer-name-input').value.trim();
-                if (name) {
-                    localStorage.setItem('trainerName', name);
-                }
-            }
-            
-            // --- Core Navigation Logic ---
-            function enterBattleArena(roomCode = null) {
-                saveTrainerName();
+/* --- BUTTON STYLES --- */
+/* Custom styles for the main action buttons in the control panel. */
+#physical-attack-btn, #special-attack-btn, #evolve-btn, #change-form-btn, #revive-btn { font-family: sans-serif; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; border: 3px solid black; border-radius: 9999px !important; padding: 0.5rem; transition: transform 0.1s ease-out; cursor: pointer; }
+#physical-attack-btn:active, #special-attack-btn:active, #evolve-btn:active, #change-form-btn:active, #revive-btn:active { transform: scale(0.95); }
+#physical-attack-btn { background-image: linear-gradient(to bottom, #fca5a5, #ef4444); }
+#special-attack-btn { background-image: linear-gradient(to bottom, #93c5fd, #3b82f6); }
+#evolve-btn { background-image: linear-gradient(to bottom, #a5b4fc, #6366f1); }
+#change-form-btn { background-image: linear-gradient(to bottom, #c084fc, #a855f7); }
+#revive-btn { background-image: linear-gradient(to bottom, #fde047, #f59e0b); }
+#evolve-btn:disabled, #change-form-btn:disabled, #revive-btn:disabled { background-image: linear-gradient(to bottom, #6b7280, #4b5563); cursor: not-allowed; opacity: 0.6; }
 
-                // Show loading screen while simulating preparation.
-                document.getElementById('loading-screen').classList.remove('hidden');
 
-                // Simulate loading time (e.g., fetching data, setting up the arena).
-                setTimeout(() => {
-                    // Hide Lobby and Show Arena View.
-                    document.getElementById('lobby-view').classList.add('hidden');
-                    document.getElementById('arena-view').classList.remove('hidden');
-                    
-                    // Hide loading screen.
-                    document.getElementById('loading-screen').classList.add('hidden');
+/* --- ANIMATION KEYFRAMES --- */
+/* Defines the animations used throughout the application. */
 
-                    // The main `script.js` file will handle the rest of the application logic from here.
+/* For the announcement banner at the top of the screen. */
+.announcement-enter { animation: fadeIn 0.5s forwards; }
+.announcement-exit { animation: fadeOut 0.5s 2s forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes fadeOut { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 20px); } }
 
-                }, 2000);
-            }
+/* For pulsing the border of the active player card. */
+@keyframes pulse-yellow { 0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); } 50% { box-shadow: 0 0 35px rgba(245, 158, 11, 1); } }
+@keyframes pulse-red { 50% { text-shadow: 0 0 10px #ef4444; } }
 
-            // --- Lobby Event Listeners ---
-            
-            // Quick Battle button starts the game immediately.
-            document.getElementById('quick-battle-btn').addEventListener('click', () => {
-                playConfirmSound();
-                enterBattleArena();
-            });
+/* For the bouncing arrow above the active player's card. */
+.turn-indicator-arrow { position: absolute; top: -15px; left: 50%; color: #f59e0b; filter: drop-shadow(0 0 5px #f59e0b); animation: bounce-arrow 1s infinite; z-index: 10; }
+@keyframes bounce-arrow { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
 
-            // Event listeners for the "Create Room" modal.
-            const roomModal = document.getElementById('room-modal');
-            document.getElementById('create-room-btn').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(roomModal, true);
-            });
-            document.getElementById('close-room-modal').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(roomModal, false);
-            });
-            document.getElementById('create-room-confirm-btn').addEventListener('click', () => {
-                playConfirmSound();
-                const roomCode = generateRoomCode();
-                // In a real app, this would create a room on a server. Here, we just simulate it.
-                alert(`Room created! Code: ${roomCode}`);
-                toggleModal(roomModal, false);
-                enterBattleArena(roomCode);
-            });
+/* --- VISUAL EFFECT ANIMATIONS --- */
+/* These animations are applied to Pokémon sprites to give feedback for actions. */
+.damage-animation { animation: damage-shake 0.3s; }
+@keyframes damage-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+.heal-animation { animation: heal-glow 0.8s; }
+@keyframes heal-glow { 0%, 100% { filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.2)) brightness(1); } 50% { filter: drop-shadow(0 0 15px #22c55e) brightness(2); } }
+.evolve-animation { animation: evolve-flash 1s; }
+@keyframes evolve-flash { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(3); } }
+.faint-animation { animation: faint-out 0.8s forwards; }
+@keyframes faint-out { from { transform: rotate(0) scale(1); opacity: 1; } to { transform: rotate(20deg) scale(0); opacity: 0; } }
+.switch-out-animation { animation: switch-out 0.4s forwards; }
+@keyframes switch-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
+.switch-in-animation { animation: switch-in 0.4s forwards; }
+@keyframes switch-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-            // Event listeners for the "Join Room" modal.
-            const joinModal = document.getElementById('join-modal');
-            document.getElementById('join-room-btn').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(joinModal, true);
-            });
-            document.getElementById('close-join-modal').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(joinModal, false);
-            });
-            document.getElementById('join-room-confirm-btn').addEventListener('click', () => {
-                const roomCode = document.getElementById('room-code-input').value.trim();
-                if (roomCode.length === 6) {
-                    playConfirmSound();
-                    toggleModal(joinModal, false);
-                    enterBattleArena(roomCode);
-                } else {
-                    alert('Please enter a valid 6-digit room code!');
-                }
-            });
-            
-            // Allow clicking on example rooms to fill the input field.
-            document.querySelectorAll('.room-option').forEach(button => {
-                button.addEventListener('click', () => {
-                    const roomCode = button.querySelector('.text-green-400').textContent;
-                    document.getElementById('room-code-input').value = roomCode;
-                });
-            });
+/* --- PARALLAX BACKGROUND STYLES --- */
+#parallax-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+.parallax-layer { position: absolute; top: 0; left: 0; width: 200%; height: 100%; background-repeat: repeat-x; background-position: 0 0; background-size: auto 100%; image-rendering: pixelated; animation: scroll linear infinite; }
+.parallax-layer.ground { background-size: auto 128px; background-position: bottom left; }
+/* The animation scrolls the background image horizontally. Different layers have different animation durations, creating the parallax effect. */
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-            // Event listeners for the "Settings" modal.
-            const settingsModal = document.getElementById('settings-modal');
-            document.getElementById('settings-btn').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(settingsModal, true);
-            });
-            document.getElementById('close-settings-modal').addEventListener('click', () => {
-                playClickSound();
-                toggleModal(settingsModal, false);
-            });
-            document.getElementById('save-settings-btn').addEventListener('click', () => {
-                playConfirmSound();
-                const settings = {
-                    volume: document.getElementById('volume-slider').value,
-                    animationSpeed: document.getElementById('animation-speed-select').value,
-                    autosave: document.getElementById('autosave-checkbox').checked,
-                    damageNumbers: document.getElementById('damage-numbers-checkbox').checked
-                };
-                localStorage.setItem('gameSettings', JSON.stringify(settings));
-                toggleModal(settingsModal, false);
-            });
-            
-            // Input listeners for real-time feedback and formatting.
-            document.getElementById('volume-slider').addEventListener('input', (e) => {
-                document.getElementById('volume-display').textContent = `${e.target.value}%`;
-            });
-            document.getElementById('room-code-input').addEventListener('input', (e) => {
-                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            });
-            document.getElementById('trainer-name-input').addEventListener('input', saveTrainerName);
-        });
-    </script>
-</body>
-</html>
+/* --- WEATHER EFFECTS --- */
+.weather-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
+#sandstorm-overlay { background-image: url('https://www.transparenttextures.com/patterns/sandpaper.png'); animation: sandstorm-scroll 1s linear infinite; opacity: 0.2; }
+@keyframes sandstorm-scroll { from { background-position: 0 0; } to { background-position: 256px 256px; } }
+#hail-overlay::before { content: ''; position: absolute; top: -100px; left: 0; width: 100%; height: calc(100% + 100px); background-image: radial-gradient(circle, white 1px, transparent 1px), radial-gradient(circle, white 1px, transparent 1px); background-size: 100px 100px, 50px 50px; background-position: 0 0, 25px 25px; animation: hail-fall 1.5s linear infinite; opacity: 0.5; }
+@keyframes hail-fall { from { transform: translateY(0); } to { transform: translateY(100px); } }
+
+/* --- TYPE-BASED ENTRY ANIMATIONS --- */
+/* These animations play when a Pokémon switches into battle. */
+.entry-animation-container { position: absolute; inset: 0; pointer-events: none; z-index: 15; }
+.entry-animation-effect { position: absolute; animation-duration: 0.6s; animation-fill-mode: forwards; opacity: 0; }
+.entry-anim-fire { width: 100%; height: 100%; background: radial-gradient(circle, transparent 40%, var(--type-fire) 100%); animation-name: burst-fade; }
+@keyframes burst-fade { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+.entry-anim-water { width: 100%; height: 100%; background: radial-gradient(circle, var(--type-water) 10%, transparent 70%); animation-name: splash-fade; }
+@keyframes splash-fade { 0% { transform: scaleY(0); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+.entry-anim-default { width: 100%; height: 100%; background: radial-gradient(circle, white 10%, transparent 70%); animation-name: burst-fade; }
+
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+/* Media queries to adjust the layout for different screen sizes. */
+@media (min-width: 1921px) { .bottom-0 > .grid { max-width: 1600px; margin-left: auto; margin-right: auto; } }
+/* For tablets and small laptops */
+@media (max-width: 1400px) { #player-grid { grid-template-columns: repeat(3, 1fr); } .bottom-0 > .grid { grid-template-columns: repeat(2, 1fr); } }
+/* For mobile devices */
+@media (max-width: 767px) { #player-grid { grid-template-columns: repeat(2, 1fr); } .bottom-0 > .grid { grid-template-columns: 1fr; } .bottom-0 .grid > div { padding: 0.5rem; } .bottom-0 h4 { margin-bottom: 0.25rem; } .bottom-0 select, .bottom-0 input, .bottom-0 button { padding: 0.5rem; } .bottom-0 #update-stat-btn { height: 2.25rem; } }
